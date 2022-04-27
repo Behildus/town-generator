@@ -8,17 +8,13 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Use JSON file for storage
-const file = join(__dirname, 'db.json')
+const file = join(__dirname, './db.json')
 const adapter = new JSONFile(file)
 const db = new Low(adapter)
 
-// Read data from JSON file, this will set db.data content
-db.read()
-
-async function handleGetSpecies() {
-  var species = db.data.species;
-  return species;
-}
+db.read();
+db.data ||= { species: {} }
+db.write();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -68,4 +64,18 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.handle('dialog:getSpecies', handleGetSpecies)
+
+
+async function handleGetSpecies() {
+  var species = db.data.species;
+  return species;
+}
+
+async function handlePutSpecies(event, species_data) {
+  db.data.species = species_data;
+  await db.write(db.data);
+}
+
+ipcMain.handle('dialog:getSpecies', handleGetSpecies);
+
+ipcMain.on('putSpecies', handlePutSpecies);

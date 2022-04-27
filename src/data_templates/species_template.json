@@ -1,0 +1,19 @@
+{
+    "species": {
+        "Chloran": {
+            "name": []
+        },
+        "Elf": {
+            "first": [],
+            "last": []
+        },
+        "Faun": {
+            "first": [],
+            "last": []
+        },
+        "Human": {
+            "first": [],
+            "last": []
+        }
+    }
+}

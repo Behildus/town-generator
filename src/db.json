@@ -1,8 +1,8 @@
 {
-  "species": [
-    "Chloran",
-    "Elf",
-    "Faun",
-    "Human"
-  ]
+  "species": {
+    "Faun": {},
+    "Chloran": {},
+    "Human": {},
+    "Elf": {}
+  }
 }
