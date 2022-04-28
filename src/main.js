@@ -13,8 +13,7 @@ const adapter = new JSONFile(file)
 const db = new Low(adapter)
 
 db.read();
-db.data ||= { species: {} }
-db.write();
+db.data ||= {species: {}}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
