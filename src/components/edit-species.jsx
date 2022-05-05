@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, Input, Button, ButtonGroup, TextField, Snackbar, IconButton, Autocomplete } from '@mui/material';
+import { Box, Input, Button, ButtonGroup, TextField, Snackbar, IconButton, Autocomplete, Grid } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -10,27 +10,79 @@ function submitSpecies(species_data) {
     window.electronAPI.putSpecies(species_data);
 }
 
+const Layer2 = ({sel_species, species, setSpecies, setDoneDisabled}) => {  
+    const [new_name_type, setNewNameType] = React.useState("");
+    const [add_type_disabled, setAddTypeDisabled] = React.useState(true);
+
+    var add_names = []
+
+    for (let name_type in species[sel_species]) {
+        var names = species[sel_species][name_type].map((name) =>
+            <li key={name}>{name}</li>
+        )
+        add_names.push(
+            <div key={name_type}>
+                <h3>{name_type}</h3>
+                {names}
+            </div>      
+        )
+        
+    }
+
+    return (
+        <div style={{marginTop: 5, marginLeft: 20}}>
+            <Input 
+                id="name-type"
+                size="small"
+                placeholder="Add Name Type"
+                value={new_name_type}
+                sx={{width: 300}}
+                onChange={(event) => {
+                    setNewNameType(event.target.value)
+                    if (event.target.value === "") {
+                        setAddTypeDisabled(true)
+                    } else {
+                        setAddTypeDisabled(false)
+                    }
+                }}/>
+            <Button
+                startIcon={<AddIcon/>}
+                size="small"
+                variant="contained"
+                disabled={add_type_disabled}
+                onClick={() => {
+                    var tmp_species = species;
+                    tmp_species[sel_species][new_name_type] = [];
+                    setSpecies(tmp_species);
+                    setNewNameType("");
+                    setAddTypeDisabled(true);
+                    setDoneDisabled(false)
+                }}
+            >Add Name Type</Button>
+            
+            {add_names}
+        </div>
+    )
+    
+}
+
 function EditSpecies() {
     // Layer 1: Add Species, Select Species, Remove Species,
     const [species, setSpecies] = React.useState({});
-    const [species_options, setSpeciesOptions] = React.useState([]);
     const [new_species, setNewSpecies] = React.useState("");
+    const [add_species_disabled, setAddSpeciesDisabled] = React.useState(true);
     const [sel_species, setSelSpecies] = React.useState(null);
     const [in_value, setInValue] = React.useState("");
-    const [add_species_disabled, setAddSpeciesDisabled] = React.useState(true);
     const [rmv_species_disabled, setRmvSpeciesDisabled] = React.useState(true);
-    // Layer 2: Add Name Type, Select Name Type, Remove Name Type
-    const [add_layer2, setLayer2] = React.useState("");
-    const [names, setNames] = React.useState({});
-    const [name_options, setNameOptions] = React.useState([]);
-    const [sel_name_type, setSelNameType] = React.useState(null);
+    // Layer 2: Add Name Type, Remove Name Type, Show Names, Remove Names
+    const [set_layer2, setLayer2] = React.useState(false);
     // Save and Discard
-    const [don_disabled, setDonDisabled] = React.useState(true);
+    const [done_disabled, setDoneDisabled] = React.useState(true);
     // Notification
     const [notif_state, setNotifState] = React.useState({
         open: false,
         message: ""
-    })
+    });
 
     const handleNotifClose =() => {
         setNotifState({open: false, message: notif_state.message});
@@ -58,56 +110,11 @@ function EditSpecies() {
     const refresh = () => {
         (async () => {
             var species = await window.electronAPI.getSpecies();
-            setSpecies(species);
-            setSpeciesOptions(Object.keys(species));
-            
+            setSpecies(species);       
         })();
     }
 
-    const addLayer2 = () => {
-        var layer2 = 
-            <div style={{marginLeft: 20}}>
-                <div style={{marginTop: 5}}>
-                    <Input 
-                        id="name-type"
-                        size="small"
-                        placeholder="Add Name Type"
-                        aria-describedby="species-helper-text"
-                        value={""}
-                        sx={{width: 300}}/>
-                    <Button
-                        startIcon={<AddIcon/>}
-                        size="small"
-                        variant="contained"
-                        disabled
-                    >Add Name Type</Button>
-                </div>
-                <div style={{display: "flex", alignItems: "end", marginTop: 5}}>
-                    <Autocomplete
-                        disablePortal
-                        id="combo-box-demo1"
-                        options={name_options}
-                        sx={{ width: 300}}
-                        value={sel_name_type}
-                        onChange={(event, newValue) => {
-                            setSelNameType(newValue);
-                        }}
-                        renderInput={(params) => <TextField {...params} 
-                            placeholder="Choose Name Type" 
-                            variant="standard" 
-                        />}
-                    />
-                    <Button 
-                        startIcon={<RemoveIcon/>}
-                        size="small"
-                        variant="contained"
-                        disabled
-                    >Remove Name Type</Button>
-                </div>
-            </div>;
-            
-        setLayer2(layer2);
-    }
+    
 
     React.useEffect(() => {
         refresh();
@@ -123,7 +130,6 @@ function EditSpecies() {
                     id="species"
                     size="small"
                     placeholder="Add Species"
-                    aria-describedby="species-helper-text"
                     value={new_species}
                     sx={{width: 300}}
                     onChange={(event) => {
@@ -144,10 +150,9 @@ function EditSpecies() {
                         var tmp_species = species;
                         tmp_species[new_species] = {};
                         setSpecies(tmp_species);
-                        setSpeciesOptions(Object.keys(tmp_species));
                         setNewSpecies("");
                         setAddSpeciesDisabled(true);
-                        setDonDisabled(false)
+                        setDoneDisabled(false)
                     }}
                 >Add Species</Button>
             </div>
@@ -155,23 +160,19 @@ function EditSpecies() {
                 <Autocomplete
                     disablePortal
                     id="combo-box-demo"
-                    options={species_options}
+                    options={Object.keys(species)}
                     sx={{ width: 300}}
                     value={sel_species}
                     inputValue={in_value}
                     onChange={(event, newValue) => {
-                        if (newValue == null) {
-                            setRmvSpeciesDisabled(true)
-                            setLayer2("");
-                        } else {
-                            setRmvSpeciesDisabled(false)
-                            addLayer2()
-
-                            var tmp_name_types = Object.keys(species[newValue])
-                            //console.log(tmp_name_types);
-                            setNameOptions(tmp_name_types);
-                        }
                         setSelSpecies(newValue);
+                        if (newValue == null) {
+                            setRmvSpeciesDisabled(true);
+                            setLayer2(false);
+                        } else {
+                            setRmvSpeciesDisabled(false);
+                            setLayer2(true);
+                        }
                     }}
                     onInputChange={(event, newInputValue) => {
                         if (newInputValue !== null) {
@@ -192,30 +193,30 @@ function EditSpecies() {
                         var tmp_species = species;
                         delete tmp_species[sel_species]
                         setSpecies(tmp_species);
-                        setSpeciesOptions(Object.keys(tmp_species));
                         setSelSpecies(null);
                         setInValue("");
-                        setRmvSpeciesDisabled(true)
-                        setDonDisabled(false)
-                        setLayer2("");
+                        setRmvSpeciesDisabled(true);
+                        setLayer2(false);
+                        setDoneDisabled(false);
                     }}
                 >Remove Species</Button>
                 
             </div>
-            {add_layer2}
+            { set_layer2 ? <Layer2 sel_species={sel_species} species={species} setSpecies={setSpecies} setDoneDisabled={setDoneDisabled}/> : null }
+
             <div style={{margin: 5}}>
-                <ButtonGroup disabled={don_disabled}>
+                <ButtonGroup disabled={done_disabled}>
                     <Button
                         startIcon={<SaveIcon/>}
                         size="small"
                         variant="contained"
                         onClick={() => {
                             submitSpecies(species);
-                            setDonDisabled(true);
+                            setDoneDisabled(true);
                             setSelSpecies(null);
                             setInValue("");
                             setRmvSpeciesDisabled(true);
-                            setLayer2("");
+                            setLayer2(false);
                             handleNotifOpen("Changes Saved");
                         }}
                     >Save</Button>
@@ -226,11 +227,11 @@ function EditSpecies() {
                         variant="contained"
                         onClick={(event) => {
                             refresh();
-                            setDonDisabled(true);
+                            setDoneDisabled(true);
                             setSelSpecies(null);
                             setInValue("");
                             setRmvSpeciesDisabled(true);
-                            setLayer2("");
+                            setLayer2(false);
                             handleNotifOpen("Changes Discarded");
                         }}
                     >Discard</Button>
