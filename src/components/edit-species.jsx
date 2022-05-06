@@ -13,17 +13,78 @@ function submitSpecies(species_data) {
 const Layer2 = ({sel_species, species, setSpecies, setDoneDisabled}) => {  
     const [new_name_type, setNewNameType] = React.useState("");
     const [add_type_disabled, setAddTypeDisabled] = React.useState(true);
+    const [new_name, setNewName] = React.useState("");
+    const [add_name_disabled, setAddNameDisabled] = React.useState(true);
 
     var add_names = []
 
     for (let name_type in species[sel_species]) {
         var names = species[sel_species][name_type].map((name) =>
-            <li key={name}>{name}</li>
+            <li key={name}>
+                {name}
+                <Button
+                    startIcon={<RemoveIcon/>}
+                    size="small"
+                    onClick={() => {
+                        var tmp_species = {...species};
+                        console.log(species[sel_species][name_type]);
+                        const index = tmp_species[sel_species][name_type].indexOf(name);
+                        if (index > -1) {
+                            tmp_species[sel_species][name_type].splice(index, 1);
+                        }
+                        setSpecies(tmp_species);
+                        setDoneDisabled(false);
+                    }}
+                />
+            </li>
+            
         )
         add_names.push(
             <div key={name_type}>
-                <h3>{name_type}</h3>
-                {names}
+                <div>
+                    <h3 style={{display: "inline"}}>{name_type}</h3>
+                    <Button 
+                        startIcon={<RemoveIcon/>}
+                        size="small"
+                        onClick={() => {
+                            var tmp_species = {...species};
+                            delete tmp_species[sel_species][name_type]
+                            setSpecies(tmp_species);
+                            setDoneDisabled(false);
+                        }}
+                    />
+                </div>
+                <div>
+                    <Input 
+                        id="name-input"
+                        size="small"
+                        placeholder="Add Name"
+                        value={new_name}
+                        sx={{width: 200}}
+                        onChange={(event) => {
+                            setNewName(event.target.value)
+                            if (event.target.value === "") {
+                                setAddNameDisabled(true)
+                            } else {
+                                setAddNameDisabled(false)
+                            }
+                        }}/>
+                    <Button
+                        startIcon={<AddIcon/>}
+                        size="small"
+                        variant="contained"
+                        disabled={add_name_disabled}
+                        onClick={() => {
+                            var tmp_species = species;
+                            tmp_species[sel_species][name_type].push(new_name);
+                            setSpecies(tmp_species);
+                            setNewName("");
+                            setAddNameDisabled(true);
+                            setDoneDisabled(false)
+                        }}
+                    >Add Name</Button>
+                    {names}
+                </div>
             </div>      
         )
         
@@ -147,7 +208,7 @@ function EditSpecies() {
                     variant="contained"
                     disabled={add_species_disabled}
                     onClick={() => {
-                        var tmp_species = species;
+                        var tmp_species = {...species};
                         tmp_species[new_species] = {};
                         setSpecies(tmp_species);
                         setNewSpecies("");
@@ -190,7 +251,7 @@ function EditSpecies() {
                     variant="contained"
                     disabled={rmv_species_disabled}
                     onClick={() => {
-                        var tmp_species = species;
+                        var tmp_species = {...species};
                         delete tmp_species[sel_species]
                         setSpecies(tmp_species);
                         setSelSpecies(null);
